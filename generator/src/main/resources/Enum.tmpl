@@ -1,0 +1,33 @@
+package com.amentra.amqp.client;
+
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
+
+public enum ${className} {
+<#list choices as choice>
+	${choice[0]}(${choice[1]}),
+</#list>
+	;
+	
+	private int value;
+	
+	${className}(int value) {
+		this.value = value;
+	}
+	
+	public int getValue() {
+		return value;
+	}
+	
+	private static final Map<Integer,${className}> lookup = new HashMap<Integer,${className}>();
+
+	static {
+		for (${className} t : EnumSet.allOf(${className}.class))
+			lookup.put(t.getValue(), t);
+	}
+	
+	public static ${className} get(int value) {
+		return lookup.get(value);
+	}
+}

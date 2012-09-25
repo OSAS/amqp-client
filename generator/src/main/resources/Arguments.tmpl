@@ -1,0 +1,196 @@
+package com.amentra.amqp.client.protocol;
+
+import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.buffer.ChannelBuffers;
+
+import com.amentra.amqp.client.AMQPTypesCodec;
+import com.amentra.amqp.client.Assembly;
+import com.amentra.amqp.client.MethodArguments;
+import com.amentra.amqp.client.Segment;
+import com.amentra.amqp.client.SegmentBuilder;
+import com.amentra.amqp.client.Struct;
+import com.amentra.amqp.client.Type;
+
+
+public class ${className?cap_first}${method.argumentsClassName} implements MethodArguments {
+    private int packFlags = 0;
+    
+    <#assign bit=8>
+    <#lt><#list method.fields as field>
+        <#if bit gt 15>
+        <#assign bit=0>
+        </#if>
+    private ${field.type.className} ${field.camelCased}; // ${field.type.type}
+    
+    public void set${field.camelCased?cap_first}(${field.type.className} ${field.camelCased}) {
+        this.${field.camelCased} = ${field.camelCased};
+        <#if field.type.className == 'boolean'>
+        if (this.${field.camelCased}) {
+        <#else>
+        if (this.${field.camelCased} != null) {
+        </#if>
+            packFlags |= (1 << ${bit}); 
+        } else {
+            packFlags &= ~(1 << ${bit});
+        }
+    }
+    
+    public ${field.type.className} get${field.camelCased?cap_first}() {
+        return ${field.camelCased};
+    }
+        <#assign bit = bit + 1>
+    </#list>
+    
+    <#list method.headers as header>
+    private ${header.struct.className} ${header.struct.className?uncap_first};
+    
+    public void set${header.struct.className}(${header.struct.className} ${header.struct.className?uncap_first}) {
+        this.${header.struct.className?uncap_first} = ${header.struct.className?uncap_first};
+    }
+    
+    public ${header.struct.className} get${header.struct.className}() {
+        return ${header.struct.className?uncap_first};
+    }
+    
+    </#list>
+    
+    public Struct getCodedStruct(short code) {
+    <#list method.headers as header>
+        if (${header.struct.code} == code) {
+            return ${header.struct.className?uncap_first};
+        }
+    </#list>
+        return null;
+    }
+    
+    public void setCodedStruct(short code, Struct struct) {
+    <#list method.headers as header>
+        if (${header.struct.code} == code) {
+            this.${header.struct.className?uncap_first} = (${header.struct.className}) struct;
+        }
+    </#list>
+    }
+    
+    public boolean hasBody() {
+        return ${method.hasBodySegment?string};
+    }
+    
+    //if method.hasBodySegment>
+    private byte[] body;
+    
+    public byte[] getBody() { return body; }
+    public void setBody(byte[] body) { this.body = body; }
+    //if
+    
+    public List<Struct> getHeaders() {
+        List<Struct> l = new ArrayList<Struct>();
+    <#list method.headers as header>
+        if (${header.struct.className?uncap_first} != null) {
+            l.add(${header.struct.className?uncap_first});
+        }
+    </#list>
+        return l;
+    }
+    
+    /*
+    public void addSegmentsToAssembly(Assembly assembly) {
+        Segment segment = null;
+        ChannelBuffer buffer = null;
+    <#list method.headers as header>
+        if (${header.struct.className?uncap_first} != null) {
+            buffer = ChannelBuffers.dynamicBuffer();
+            ${header.struct.className?uncap_first}.encode(buffer);
+            segment = SegmentBuilder.createSegment(Segment.Type.HEADER, buffer);
+            assembly.addSegment(segment);
+        }
+
+    </#list>
+    <#if method.hasBodySegment>
+        if (body != null && body.length > 0) {
+            buffer = ChannelBuffers.directBuffer(body.length);
+
+            segment = SegmentBuilder.createSegment(Segment.Type.BODY, buffer);
+            assembly.addSegment(segment);
+        }
+    </#if>
+    }
+    */
+    
+    <#if method.shouldEncodeHeader>
+    private com.amentra.amqp.client.protocol.Header header = new com.amentra.amqp.client.protocol.Header();
+    
+    public boolean getSync() {
+        return header.getSync();
+    }
+    
+    public void setSync(boolean sync) {
+        header.setSync(sync);
+    }
+    
+    public void encodeHeader(ChannelBuffer buffer) {
+        header.encode(buffer);
+    }
+    </#if>
+    
+    public String toString() {
+        String s = "${className?cap_first}${method.argumentsClassName}[";
+        <#lt><#list method.fields as field>
+        s += "${field.camelCased}=" + ${field.camelCased} + ",";
+        </#list>
+        s += "]";
+        return s;
+    }
+    
+    public void encode(ChannelBuffer buffer) {
+        <#if method.shouldEncodeHeader>
+        encodeHeader(buffer);
+        </#if>
+        buffer.writeShort(packFlags);
+        <#assign bit=8>
+        <#lt><#list method.fields as field>
+            <#if bit gt 15>
+                <#assign bit=0>
+            </#if>
+            <#if field.type.type != 'BIT'>
+        if ((packFlags & (1 << ${bit})) == (1 << ${bit})) {
+                <#if field.type.class.simpleName == "SimpleTypeDefinition">
+            AMQPTypesCodec.encode(Type.${field.type.type}, ${field.camelCased}, buffer);
+                <#else>
+            ${field.camelCased}.encode(buffer);
+                </#if>
+        }
+            </#if>
+            <#assign bit = bit + 1>
+        </#list>
+    }
+    
+    public void decode(ChannelBuffer buffer) {
+        packFlags = buffer.readUnsignedShort();
+        <#assign bit=8>
+        <#lt><#list method.fields as field>
+        <#if bit gt 15>
+        <#assign bit=0>
+        </#if>
+        <#if field.type.className == 'boolean'>
+        ${field.camelCased} = (packFlags & (1 << ${bit})) == (1 << ${bit});
+        <#else>
+        if ((packFlags & (1 << ${bit})) == (1 << ${bit})) {
+            <#if field.type.class.simpleName == "SimpleTypeDefinition">
+            ${field.camelCased} = (${field.type.className}) AMQPTypesCodec.decode(Type.${field.type.type}, buffer);
+            <#else>
+            if (null == ${field.camelCased}) {
+                ${field.camelCased} = new ${field.type.className}();
+            }
+            ${field.camelCased}.decode(buffer);
+            </#if>
+        }
+        </#if>
+        <#assign bit = bit + 1>
+        </#list>
+    }
+}

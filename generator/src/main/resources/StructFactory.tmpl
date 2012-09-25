@@ -1,0 +1,45 @@
+package com.amentra.amqp.client;
+
+import java.util.Map;
+import java.util.HashMap;
+import org.jboss.netty.buffer.ChannelBuffer;
+import com.amentra.amqp.client.protocol.*;
+
+public class StructFactory {
+    private static Map<Integer, Class<? extends Struct>> structs = new HashMap<Integer, Class<? extends Struct>>();
+    
+    private StructFactory() {}
+    
+    static {
+<#list classDefinitions as cd>
+    <#list cd.structMap?keys as code>
+        <#assign struct = cd.structMap[code]>
+        <#if struct.code??>
+        structs.put(0x${cd.code2Digits}${struct.code2Digits}, ${struct.className}.class);
+        </#if><#t>
+    </#list>
+</#list>
+    }
+    
+    public static Struct createFromBuffer(Integer classAndCode, ChannelBuffer buffer) {
+        try {
+            Class<? extends Struct> structClass = structs.get(classAndCode);
+            Struct struct = structClass.newInstance();
+            struct.decode(buffer);
+            return struct;
+        } catch (InstantiationException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        
+        throw new RuntimeException();
+    }
+    
+    public static Struct createFromBuffer(Integer classCode, Integer structCode, ChannelBuffer buffer) {
+        Integer classAndCode = (classCode << 8) | structCode;
+        return createFromBuffer(classAndCode, buffer);
+    }
+}

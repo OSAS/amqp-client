@@ -1,0 +1,157 @@
+package com.amentra.amqp.client.protocol;
+
+import org.jboss.netty.buffer.ChannelBuffer;
+
+import com.amentra.amqp.client.Struct;
+import com.amentra.amqp.client.AMQPTypesCodec;
+import com.amentra.amqp.client.Type;
+
+public class ${struct.className} extends Struct {
+    <#assign bit=(8 * struct.pack) - 8>
+    <#assign i = 0> 
+    <#lt><#list struct.fields as field>
+        <#if i == 8>
+        <#assign bit = bit - 16>
+        <#assign i = 0>
+        </#if>
+    private ${field.type.className} ${field.camelCased}; // ${field.type.type}
+    
+    public void set${field.camelCased?cap_first}(${field.javaType} ${field.camelCased}) {
+        this.${field.camelCased} = ${field.camelCased};
+        <#if struct.pack gt 0>
+        <#if field.javaType == 'boolean'>
+        if (this.${field.camelCased}) {
+        <#else>
+        if (this.${field.camelCased} != null) {
+        </#if>
+            packFlags |= (1 << ${bit}); 
+        } else {
+            packFlags &= ~(1 << ${bit});
+        }
+        </#if>
+    }
+    
+    public ${field.javaType} get${field.camelCased?cap_first}() {
+        return ${field.camelCased};
+    }
+    
+        <#assign bit = bit + 1>
+        <#assign i = i + 1>
+    </#list>
+
+    public ${struct.className}() {
+    }
+    
+    public int getEncodedSize() {
+        int size = 0;
+        <#if struct.pack gt 0>
+        size += ${struct.pack}; // pack
+        </#if>
+        
+        <#assign bit=(8 * struct.pack) - 8>
+        <#assign i = 0> 
+        <#list struct.fields as field>
+            <#if i == 8>
+                <#assign bit = bit - 16>
+                <#assign i = 0>
+            </#if>
+            <#if field.type.type != 'BIT'>
+                <#if struct.pack gt 0>
+        if ((packFlags & (1 << ${bit})) == (1 << ${bit})) {
+                </#if>
+                <#if field.type.class.simpleName == "SimpleTypeDefinition">
+            size += AMQPTypesCodec.encodedSize(Type.${field.type.type}, ${field.camelCased});
+                <#else>
+            size += ${field.camelCased}.getEncodedSize();
+                </#if>
+                <#if struct.pack gt 0>
+        }
+                </#if>
+            </#if>
+            
+            <#assign bit = bit + 1>
+            <#assign i = i + 1>
+        </#list>
+        
+        return size;
+    }
+    
+    public void encode(ChannelBuffer buffer) {
+    <#if struct.size == 1>
+        buffer.writeByte((int)getEncodedSize());
+    <#elseif struct.size == 2>
+        buffer.writeShort((int)getEncodedSize());
+    <#elseif struct.size == 4>
+        buffer.writeInt((int)getEncodedSize());
+    </#if>
+    <#if struct.code??>
+        buffer.writeByte(${struct.classCode});
+        buffer.writeByte(${struct.code});
+    </#if>
+    <#if struct.pack == 1>
+        buffer.writeByte((int)packFlags);
+    <#elseif struct.pack == 2>
+        buffer.writeShort((int)packFlags);
+    <#elseif struct.pack == 4>
+        buffer.writeInt((int)packFlags);
+    </#if>
+    <#assign bit=(8 * struct.pack) - 8>
+    <#assign i = 0> 
+    <#list struct.fields as field><#lt>
+        <#if i == 8>
+            <#assign bit = bit - 16>
+            <#assign i = 0>
+        </#if>
+        <#if field.type.type != 'BIT'>
+            <#if struct.pack gt 0>
+        if ((packFlags & (1 << ${bit})) == (1 << ${bit})) {
+            </#if>
+            <#if field.type.class.simpleName == "SimpleTypeDefinition">
+            AMQPTypesCodec.encode(Type.${field.type.type}, ${field.camelCased}, buffer);
+            <#else>
+            ${field.camelCased}.encode(buffer);
+            </#if>
+            <#if struct.pack gt 0>
+        }
+            </#if>
+        </#if>
+        
+        <#assign bit = bit + 1>
+        <#assign i = i + 1>
+    </#list>
+    }
+    
+    public void decode(ChannelBuffer buffer) {
+        <#if struct.pack gt 0>
+        packFlags = buffer.readUnsignedShort();
+        </#if>
+        <#assign bit=(8 * struct.pack) - 8>
+        <#assign i = 0>
+        <#lt><#list struct.fields as field>
+            <#if i == 8>
+                <#assign bit = bit - 16>
+                <#assign i = 0>
+            </#if>
+            <#if field.javaType == 'boolean'>
+        ${field.camelCased} = (packFlags & (1 << ${bit})) == (1 << ${bit});
+            <#else>
+                <#if struct.pack gt 0>
+        if ((packFlags & (1 << ${bit})) == (1 << ${bit})) {
+                </#if>
+                <#if field.type.class.simpleName == "SimpleTypeDefinition">
+            ${field.camelCased} = (${field.javaType}) AMQPTypesCodec.decode(Type.${field.type.type}, buffer);
+                <#else>
+            if (null == ${field.camelCased}) {
+                ${field.camelCased} = new ${field.javaType}();
+            }
+            ${field.camelCased}.decode(buffer);
+                </#if>
+                <#if struct.pack gt 0>
+        }
+                </#if>
+            </#if>
+            <#assign bit = bit + 1>
+            <#assign i = i + 1>
+        </#list>
+    }
+}

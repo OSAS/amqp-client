@@ -1,0 +1,37 @@
+package com.amentra.amqp.client;
+
+import org.jboss.netty.channel.ChannelFuture;
+import com.amentra.amqp.client.impl.ConnectionImpl;
+import com.amentra.amqp.client.protocol.*;
+
+public abstract class SessionBase {
+    protected abstract Future send(ProtocolMessage pm);
+    
+    <#list classDefinitions as cd><#lt>
+        <#list cd.methods as method><#assign hasField=false><#lt>
+    public Future ${cd.name}${method.javaName?cap_first}(<#list method.fields as f><#assign hasField=true>${f.javaType} ${f.camelCased}<#if f_has_next>, </#if></#list><#list method.headers as header><#if hasField>, </#if><#assign hasField=true>${header.struct.className} ${header.struct.className?uncap_first}</#list><#if method.hasBodySegment><#if hasField>, </#if>byte[] body</#if>) {
+        ${cd.name?cap_first}${method.argumentsClassName} args = new ${cd.name?cap_first}${method.argumentsClassName}();
+        <#if cd.name == "execution" && method.javaName == "Sync">
+        args.setSync(true);
+        </#if>
+        <#list method.fields as f>
+        args.set${f.camelCased?cap_first}(${f.camelCased});
+        </#list>
+        <#list method.headers as header>
+        args.set${header.struct.className}(${header.struct.className?uncap_first});
+        </#list>
+        <#if method.hasBodySegment>
+        
+        if (body != null && body.length > 1) {
+            args.setBody(body);
+        }
+        </#if>
+        
+        ProtocolMessage pm = new ProtocolMessage(${cd.code}, ${method.code}, args, MessageType.${method.messageType});
+        
+        return send(pm);
+    }
+
+        </#list>
+    </#list>
+}

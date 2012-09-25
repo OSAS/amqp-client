@@ -1,0 +1,78 @@
+package com.amentra.amqp.client;
+
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
+
+public enum Type {
+    <#lt><#list types as type>
+    ${type.type}(${type.code!"null"}, "${type.name}", ${type.fixedBits}, ${type.variableBits}),
+    </#list>
+    ;
+    
+    private Short code;
+    private String name;
+    private int width;
+    private int variableWidth;
+    
+    private Type(Integer code, String name, int width, int variableWidth) {
+        if (code != null) {
+            this.code = code.shortValue();
+        }
+        this.name = name;
+        this.width = width;
+        this.variableWidth = variableWidth;
+    }
+
+    private static final Map<Short,Type> lookupByCode = new HashMap<Short,Type>();
+    private static final Map<String,Type> lookupByName= new HashMap<String,Type>();
+
+    static {
+        for (Type t : EnumSet.allOf(Type.class)) {
+            if (t.code != null) {
+                lookupByCode.put(t.getCode(), t);
+            }
+            lookupByName.put(t.getName(), t);
+        }
+    }
+    
+    public static Type getByCode(short value) {
+        return lookupByCode.get(value);
+    }
+    
+    public static Type getByName(String name) {
+        return lookupByName.get(name);
+    }
+    
+    public Short getCode() {
+        return code;
+    }
+
+    public void setCode(Short code) {
+        this.code = code;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String id) {
+        this.name = id;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public void setWidth(int width) {
+        this.width = width;
+    }
+
+    public int getVariableWidth() {
+        return variableWidth;
+    }
+
+    public void setVariableWidth(int variableWidth) {
+        this.variableWidth = variableWidth;
+    }
+}

@@ -1,0 +1,44 @@
+package com.amentra.amqp.client.protocol;
+
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
+
+import com.amentra.amqp.client.ProtocolMessage;
+import com.amentra.amqp.client.MessageType;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
+public class ${className?cap_first}Proxy {
+    private static final Logger LOG = LoggerFactory.getLogger(${className?cap_first}Proxy.class);
+     
+    public static final String className = "${className}";
+    public static final byte code = ${classCode};
+    
+    <#list methods as method>
+    public static final short code_${method.underscoredName} = ${method.code};
+    </#list>
+    
+    public ${className?cap_first}Proxy() {
+    }
+    
+    <#list methods as method>
+    public ChannelFuture ${method.underscoredName}(${className?cap_first}${method.argumentsClassName} arguments, Channel channel) {
+        ProtocolMessage message = new ProtocolMessage(code, code_${method.underscoredName}, arguments, MessageType.${method.messageType});
+        
+        ChannelFuture future = channel.write(message);
+        future.addListener(new ChannelFutureListener() {
+            public void operationComplete(ChannelFuture future) throws Exception {
+                LOG.debug("${method.name} future");
+                LOG.debug("success = {}", future.isSuccess());
+                LOG.debug("done = {}", future.isDone());
+                LOG.debug("cancelled = {}", future.isCancelled());
+                LOG.debug("cause = {}", future.getCause());
+            }
+        });
+        return future;
+    }
+    </#list>
+}

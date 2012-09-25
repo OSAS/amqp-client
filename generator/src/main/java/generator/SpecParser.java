@@ -337,7 +337,7 @@ public class SpecParser extends DefaultHandler {
 
         localPackageName = localPackageName.substring(0, localPackageName.lastIndexOf("/"));
         localPackageName = localPackageName.replace('/', '.');
-        System.out.println(localPackageName);
+        //System.out.println(localPackageName);
         templateData.put("packageName", localPackageName);
 
         template.process(templateData, out);

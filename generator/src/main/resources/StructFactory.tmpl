@@ -1,9 +1,9 @@
-package com.amentra.amqp.client;
+package ${packageName};
 
 import java.util.Map;
 import java.util.HashMap;
 import org.jboss.netty.buffer.ChannelBuffer;
-import com.amentra.amqp.client.protocol.*;
+import ${packageName}.protocol.*;
 
 public class StructFactory {
     private static Map<Integer, Class<? extends Struct>> structs = new HashMap<Integer, Class<? extends Struct>>();

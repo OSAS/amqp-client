@@ -1,4 +1,4 @@
-package com.amentra.amqp.client.protocol;
+package ${packageName};
 
 import java.util.HashMap;
 import java.util.ArrayList;
@@ -8,14 +8,13 @@ import java.util.Map;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 
-import com.amentra.amqp.client.AMQPTypesCodec;
-import com.amentra.amqp.client.Assembly;
-import com.amentra.amqp.client.MethodArguments;
-import com.amentra.amqp.client.Segment;
-import com.amentra.amqp.client.SegmentBuilder;
-import com.amentra.amqp.client.Struct;
-import com.amentra.amqp.client.Type;
-
+import com.redhat.osas.amqp.client.AMQPTypesCodec;
+import com.redhat.osas.amqp.client.Assembly;
+import com.redhat.osas.amqp.client.MethodArguments;
+import com.redhat.osas.amqp.client.Segment;
+import com.redhat.osas.amqp.client.SegmentBuilder;
+import com.redhat.osas.amqp.client.Struct;
+import com.redhat.osas.amqp.client.Type;
 
 public class ${className?cap_first}${method.argumentsClassName} implements MethodArguments {
     private int packFlags = 0;
@@ -122,7 +121,7 @@ public class ${className?cap_first}${method.argumentsClassName} implements Metho
     */
     
     <#if method.shouldEncodeHeader>
-    private com.amentra.amqp.client.protocol.Header header = new com.amentra.amqp.client.protocol.Header();
+    private Header header = new Header();
     
     public boolean getSync() {
         return header.getSync();

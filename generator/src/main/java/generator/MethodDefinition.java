@@ -1,10 +1,10 @@
 package generator;
 
+import com.redhat.osas.amqp.client.MessageType;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
-
-import com.amentra.amqp.client.MessageType;
 
 public class MethodDefinition {
     String name;

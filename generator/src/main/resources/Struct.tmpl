@@ -1,10 +1,10 @@
-package com.amentra.amqp.client.protocol;
+package ${packageName};
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
-import com.amentra.amqp.client.Struct;
-import com.amentra.amqp.client.AMQPTypesCodec;
-import com.amentra.amqp.client.Type;
+import com.redhat.osas.amqp.client.Struct;
+import com.redhat.osas.amqp.client.AMQPTypesCodec;
+import com.redhat.osas.amqp.client.Type;
 
 public class ${struct.className} extends Struct {
     <#assign bit=(8 * struct.pack) - 8>

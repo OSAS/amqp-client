@@ -32,12 +32,12 @@ public class SimpleTypeDefinition extends TypeDefinition {
         javaTypeMappings.put("str16-latin", "String");
         javaTypeMappings.put("str16", "String");
         javaTypeMappings.put("str16-utf16", "String");
-        javaTypeMappings.put("byte-ranges", "com.amentra.amqp.client.ByteRanges");
-        javaTypeMappings.put("sequence-set", "com.amentra.amqp.client.SequenceSet");
+        javaTypeMappings.put("byte-ranges", "com.redhat.osas.amqp.client.ByteRanges");
+        javaTypeMappings.put("sequence-set", "com.redhat.osas.amqp.client.SequenceSet");
         javaTypeMappings.put("map", "java.util.Map");
         javaTypeMappings.put("list", "java.util.List");
         javaTypeMappings.put("array", "java.util.List");
-        javaTypeMappings.put("struct32", "com.amentra.amqp.client.Struct");
+        javaTypeMappings.put("struct32", "com.redhat.osas.amqp.client.Struct");
         javaTypeMappings.put("dec32", "java.math.BigDecimal");
         javaTypeMappings.put("dec64", "java.math.BigDecimal");
         javaTypeMappings.put("bit", "boolean");

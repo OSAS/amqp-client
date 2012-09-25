@@ -1,6 +1,8 @@
 .idea
 generated
 *.class
+*.iml
+*.ipr
 
 # Package Files #
 *.jar

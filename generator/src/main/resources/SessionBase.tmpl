@@ -1,8 +1,8 @@
-package com.amentra.amqp.client;
+package ${packageName};
 
 import org.jboss.netty.channel.ChannelFuture;
-import com.amentra.amqp.client.impl.ConnectionImpl;
-import com.amentra.amqp.client.protocol.*;
+import ${packageName}.impl.ConnectionImpl;
+import ${packageName}.protocol.*;
 
 public abstract class SessionBase {
     protected abstract Future send(ProtocolMessage pm);

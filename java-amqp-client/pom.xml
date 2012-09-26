@@ -4,15 +4,22 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>amqp-client</artifactId>
-        <groupId>amqp-client</groupId>
+        <groupId>com.redhat.osas.amqp</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>java-amqp-client</artifactId>
     <dependencies>
+        <!--
+            IMPORTANT:
+
+            Do not use generator anywhere. Ever. It's for internal use only.
+            As soon as I figure out how to have it as a dependency only for the
+            build stage, I'm going to, well, have it as a dependency only for the build stage.
+        -->
         <dependency>
-            <groupId>amqp-client</groupId>
+            <groupId>${project.parent.groupId}</groupId>
             <artifactId>generator</artifactId>
             <version>1.0-SNAPSHOT</version>
             <optional>true</optional>
@@ -26,6 +33,29 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>[1.6.1,)</version>
+            <!--
+                IMPORTANT: For Android, *exclude this library* and import slf4j-android.
+                Example:
+
+                <dependency>
+                    <groupId>amqp-client</groupId>
+                    <artifactId>java-amqp-client</artifactId>
+                    <version>1.0-SNAPSHOT</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>org.slf4j</groupId>
+                            <artifactId>slf4j-api</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-android</artifactId>
+                    <version>1.6.1-RC1</version>
+                </dependency>
+
+            -->
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -63,6 +93,9 @@
                         </configuration>
                     </execution>
                 </executions>
+                <dependencies>
+
+                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

@@ -43,8 +43,8 @@ public class TestAMQPActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-        EditText ip = (EditText) findViewById(R.id.ip);
-        Button button = (Button) findViewById(R.id.sendButton);
+        final EditText ip = (EditText) findViewById(R.id.ip);
+        final Button button = (Button) findViewById(R.id.sendButton);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -57,7 +57,7 @@ public class TestAMQPActivity extends Activity {
                 ExecutorService executorService = Executors.newSingleThreadExecutor();
                 executorService.submit(new Runnable() {
                     public void run() {
-                        Connection c = new Connection("192.168.1.115", (short) 5672);
+                        Connection c = new Connection(ip.getText().toString(), (short) 5672);
                         c.open();
                         Session session = c.createSession(UUID.randomUUID().toString());
                         Sender sender = session.createSender("");

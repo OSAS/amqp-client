@@ -2,6 +2,7 @@ package com.redhat.osas.amqp.android;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -14,6 +15,7 @@ import com.redhat.osas.amqp.client.impl.MessageImpl;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class TestAMQPActivity extends Activity {
     /**
@@ -28,6 +30,12 @@ public class TestAMQPActivity extends Activity {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                /*
+                 * we need a service here because on more recent android VMs,
+                 * we can't do networking on the main thread. This is a good
+                 * thing, but makes using the network a little more verbose,
+                 * since we have to put it into its own thread.
+                 */
                 ExecutorService executorService = Executors.newSingleThreadExecutor();
                 executorService.submit(new Runnable() {
                     public void run() {
@@ -44,6 +52,12 @@ public class TestAMQPActivity extends Activity {
                         session.close();
                     }
                 });
+                try {
+                    executorService.awaitTermination(2, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Log.d("test-amqp", e.getMessage(), e);
+                }
+                executorService.shutdown();
             }
         });
     }

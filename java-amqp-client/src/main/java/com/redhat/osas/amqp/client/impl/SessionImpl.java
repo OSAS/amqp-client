@@ -1,4 +1,31 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *          http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 package com.redhat.osas.amqp.client.impl;
+
+import com.redhat.osas.amqp.client.*;
+import com.redhat.osas.amqp.client.api.*;
+import com.redhat.osas.amqp.client.protocol.*;
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -9,60 +36,47 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.redhat.osas.amqp.client.*;
-import com.redhat.osas.amqp.client.protocol.*;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelFuture;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.redhat.osas.amqp.client.api.Connection;
-import com.redhat.osas.amqp.client.api.Message;
-import com.redhat.osas.amqp.client.api.Receiver;
-import com.redhat.osas.amqp.client.api.Sender;
-import com.redhat.osas.amqp.client.api.Session;
-
 public class SessionImpl extends SessionBase implements Session {
     private static final Logger LOG = LoggerFactory.getLogger(SessionBase.class);
-    
+
     enum State {
         DETACHING,
         DETACHED,
         ATTACHING,
         ATTACHED
     }
-    
+
     State state = State.DETACHED;
     private ConnectionImpl connectionImpl;
-    
+
     @SuppressWarnings("unused")
     private Long peerCommandOffset;
-    
+
     private Long peerCommandId;
     private long nextCommandId = 0;
     private Map<String, ReceiverImpl> receiverMap = new HashMap<String, ReceiverImpl>();
     private int channelId = 0;
-    
-//    private List<Long> peerIncomplete = new ArrayList<Long>();
+
+    //    private List<Long> peerIncomplete = new ArrayList<Long>();
     private List<Long> peerCompleted = new ArrayList<Long>();
-    
+
     private Map<Long, ProtocolMessage> myIncompleteCommands = new HashMap<Long, ProtocolMessage>();
     private Map<String, SenderImpl> senderMap = new HashMap<String, SenderImpl>();
     private SessionProxy sessionProxy = new SessionProxy();
-    
+
     // TODO there has to be a better way to do this
     private Map<Message, MessageImpl> messageImplMap = new HashMap<Message, MessageImpl>();
-    
+
     private CountDownLatch closeLatch = null;
     private Lock myLock = new ReentrantLock();
     private Condition myCondition = myLock.newCondition();
-    
+
     private Map<Long, Future> futures = new HashMap<Long, Future>();
-    
-//    private Set<MessageImpl> unackedMessages = new HashSet<MessageImpl>();
+
+    //    private Set<MessageImpl> unackedMessages = new HashSet<MessageImpl>();
     private Map<Long, ReceiverImpl> receiversByMessage = new HashMap<Long, ReceiverImpl>();
     private Map<Long, ReceiverImpl> receiversByPendingAck = new HashMap<Long, ReceiverImpl>();
-    
+
     public SessionImpl(ConnectionImpl connectionImpl) {
         this.connectionImpl = connectionImpl;
     }
@@ -78,13 +92,13 @@ public class SessionImpl extends SessionBase implements Session {
             e.printStackTrace();
         }
     }
-    
+
     public void acknowledge(long commandId) {
         SequenceSet transfers = new SequenceSet();
         transfers.add(new SequencePair(commandId, commandId));
         messageAccept(transfers);
     }
-    
+
     public void setCommandByteOffset(Long commandOffset) {
         this.peerCommandOffset = commandOffset;
     }
@@ -92,20 +106,20 @@ public class SessionImpl extends SessionBase implements Session {
     public void setPeerCommandId(Long commandId) {
         this.peerCommandId = commandId;
     }
-    
+
     public Receiver createReceiver(String address) {
         ReceiverImpl receiver = new ReceiverImpl(address, connectionImpl.getChannel(), this);
         LOG.debug("Adding receiver to map");
         receiverMap.put(address, receiver);
         return receiver;
     }
-    
+
     public Sender createSender(String address) {
         SenderImpl sender = new SenderImpl(address, this);
         senderMap.put(address, sender);
         return sender;
     }
-    
+
     @SuppressWarnings("unchecked")
     public void onMessageTransfer(ProtocolMessage command) {
         MessageTransferArguments arguments = (MessageTransferArguments) command.getArguments();
@@ -118,53 +132,53 @@ public class SessionImpl extends SessionBase implements Session {
             if (arguments.getMessageProperties() != null) {
                 m.setProperties(arguments.getMessageProperties().getApplicationHeaders());
             }
-            
+
             m.setCommandId(command.getCommandId());
-            
+
 //            if(arguments.getAcceptMode() == 0) {
 //                unackedMessages.add(m);
 //            }
-            
+
             receiversByMessage.put(m.getCommandId(), receiver);
-            
+
             receiver.onMessageTransfer(m);
         }
         markCompleted(command);
     }
-    
+
     public void markCompleted(ProtocolMessage command) {
         LOG.debug("Marking peer command id {} complete", command.getCommandId());
         peerCompleted.add(command.getCommandId());
     }
-    
+
     public long getNextCommandId() {
         return nextCommandId++;
     }
-    
+
     public long getNextPeerCommandId() {
         return peerCommandId++;
     }
-    
+
     public int getChannelId() {
         return channelId;
     }
-    
+
     public void setChannelId(int channel) {
         this.channelId = channel;
     }
-    
+
     public Channel getChannel() {
         return connectionImpl.getChannel();
     }
-    
+
     protected Future send(ProtocolMessage pm) {
         long nextCommandId = getNextCommandId();
         LOG.debug("Adding command id {} for ProtocolMessage {} to incomplete commands", nextCommandId, pm);
         myIncompleteCommands.put(nextCommandId, pm);
-        
+
         @SuppressWarnings("unused")
         ChannelFuture future = getChannel().write(pm);
-        
+
         Future f = new Future(nextCommandId);
         futures.put(nextCommandId, f);
         return f;
@@ -174,7 +188,7 @@ public class SessionImpl extends SessionBase implements Session {
         if (arguments.getCompleted()) {
             SessionCompletedArguments completedArgs = new SessionCompletedArguments();
             SequenceSet commands = new SequenceSet();
-            
+
             long low = -1;
             long high = -1;
             for (Long completedId : peerCompleted) {
@@ -183,7 +197,7 @@ public class SessionImpl extends SessionBase implements Session {
                     high = completedId;
                     continue;
                 }
-                
+
                 if (completedId > high + 1) {
                     commands.add(new SequencePair(low, high));
                     low = completedId;
@@ -193,20 +207,20 @@ public class SessionImpl extends SessionBase implements Session {
             if (low != -1) {
                 commands.add(new SequencePair(low, high));
             }
-            
+
             completedArgs.setCommands(commands);
             sessionProxy.completed(completedArgs, getChannel());
         }
-        
+
         if (arguments.getConfirmed()) {
-            
+
         }
-        
+
         if (arguments.getExpected()) {
-            
+
         }
     }
-    
+
     public void onCompleted(SessionCompletedArguments arguments) {
         myLock.lock();
         try {
@@ -217,16 +231,18 @@ public class SessionImpl extends SessionBase implements Session {
                 for (long start = pair.getBegin(), end = pair.getEnd(); start <= end; start++) {
                     myIncompleteCommands.remove(start);
                     Future future = futures.remove(start);
-                    future.notifyListener();
+                    if (future != null) {
+                        future.notifyListener();
+                    }
                 }
             }
-            
+
             myCondition.signalAll();
-            
+
             SessionKnownCompletedArguments knownCompletedArguments = new SessionKnownCompletedArguments();
             knownCompletedArguments.setCommands(completedCommands);
             sessionProxy.known_completed(knownCompletedArguments, connectionImpl.getChannel());
-            
+
             if (state == State.DETACHING) {
                 if (completedCommands.getPairs().isEmpty()) {
                     closeLatch.countDown();
@@ -240,7 +256,7 @@ public class SessionImpl extends SessionBase implements Session {
             myLock.unlock();
         }
     }
-    
+
     public void onKnownCompleted(SessionKnownCompletedArguments arguments) {
         SequenceSet completedCommands = arguments.getCommands();
         List<SequencePair> pairs = completedCommands.getPairs();
@@ -253,12 +269,12 @@ public class SessionImpl extends SessionBase implements Session {
 
     public void commit() {
         // TODO Auto-generated method stub
-        
+
     }
 
     public void rollback() {
         // TODO Auto-generated method stub
-        
+
     }
 
     public void acknowledge() {
@@ -268,7 +284,7 @@ public class SessionImpl extends SessionBase implements Session {
     public void acknowledge(boolean sync) {
         // TODO Auto-generated method stub
     }
-    
+
     public void acknowledge(Message message) {
         acknowledge(message, false);
     }
@@ -279,14 +295,14 @@ public class SessionImpl extends SessionBase implements Session {
             receiver.acknowledgeCompleted(future.getCommandId());
         }
     };
-    
+
     public void acknowledge(Message message, boolean sync) {
         Future future = messageAccept(sequenceSetForMessage(message));
-        ReceiverImpl receiver = receiversByMessage.get(((MessageImpl)message).getCommandId());
+        ReceiverImpl receiver = receiversByMessage.get(((MessageImpl) message).getCommandId());
         receiver.addUnsettledAck(future.getCommandId());
         receiversByPendingAck.put(future.getCommandId(), receiver);
         future.setListener(acknowledgeCompleted);
-        
+
         if (sync) {
             sync();
         }
@@ -298,7 +314,7 @@ public class SessionImpl extends SessionBase implements Session {
 
     public void acknowledgeThrough(Message message, boolean sync) {
         // TODO Auto-generated method stub
-        
+
     }
 
     public void reject(Message message) {
@@ -311,10 +327,10 @@ public class SessionImpl extends SessionBase implements Session {
         messageRelease(sequenceSetForMessage(message), true);
         //TODO need to remove from messageImplMap at some point
     }
-    
+
     private SequenceSet sequenceSetForMessage(Message message) {
         SequenceSet s = new SequenceSet();
-        long commandId = ((MessageImpl)message).getCommandId();
+        long commandId = ((MessageImpl) message).getCommandId();
         s.add(new SequencePair(commandId, commandId));
         return s;
     }
@@ -370,24 +386,24 @@ public class SessionImpl extends SessionBase implements Session {
     public void checkError() {
         // TODO Auto-generated method stub
     }
-    
+
     public void waitForCompletion(long commandId) {
         myLock.lock();
         try {
             while (!isComplete(commandId)) {
                 myCondition.await();
             }
-        } catch(InterruptedException e) {
+        } catch (InterruptedException e) {
             e.printStackTrace();
         } finally {
             myLock.unlock();
         }
     }
-    
+
     public boolean isComplete(long commandId) {
         return !myIncompleteCommands.containsKey(commandId);
     }
-    
+
     public void flush() {
         SessionFlushArguments arguments = new SessionFlushArguments();
         arguments.setCompleted(true);

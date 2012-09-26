@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">testamqp</string>
+    <string name="hello">Hello, AMQP</string>
+    <string name="sendLabel">Send</string>
+    <string name="ipHeader">Server IP</string>
+    <string name="defaultIp">192.168.1.115</string>
+</resources>

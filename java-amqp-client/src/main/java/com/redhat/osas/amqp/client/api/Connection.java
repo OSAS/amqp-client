@@ -7,11 +7,12 @@ import com.redhat.osas.amqp.client.impl.SessionImpl;
 public class Connection {
 	private String host;
 	private short port = 5672;
-	private ConnectionImpl impl = new ConnectionImpl(this);
+	private ConnectionImpl impl;
 	
 	public Connection(String host, short port) {
 	    this.host = host;
 	    this.port = port;
+	    impl=new ConnectionImpl(this);
 	}
 	
 	public void open() {

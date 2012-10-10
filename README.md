@@ -61,9 +61,9 @@ a wrapper for the underlying AMQP protocol.
 There is a script in `java-amqp-client/src/test/scripts/qpidd-test-server.sh` which provides for a full
 end-to-end test of the AMQP client. To use it, follow this process, in the project home directory:
 
-    **$** mvn -DskipTests=true package dependency:copy-dependencies
-    **$** cd java-amqp-client/src/test/scripts
-    **$** ./qpidd-test-server.sh
+`**$** mvn -DskipTests=true package dependency:copy-dependencies`
+`**$** cd java-amqp-client/src/test/scripts`
+`**$** ./qpidd-test-server.sh`
 
 This will build the AMQP client, including copying the dependencies into the build structure. It then
 starts `qpidd` as a daemon, creates a queue, then executes the two test classes in sequence (receive,
